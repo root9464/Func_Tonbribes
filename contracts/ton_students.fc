@@ -20,7 +20,7 @@ const int error::premission_denied =           1003;
 
 
 ;; память ск / больше памяти = больше комиссии 
-() set_storage(slice admin_address, int secret_key) impure {
+() set_storage(slice admin_address) impure {
   set_data(
     begin_cell()
         .store_slice(admin_adress)
@@ -34,22 +34,6 @@ const int error::premission_denied =           1003;
     contract_storage~load_msg_addr(),
     contract_storage~load_uint(256)
   );
-}
-
-
-()give_all(int amount) impure inline {
-  (slice admin_adress) = load_storage();
-  
-  var balance = get_balance();
-
-  builder message = begin_cell()
-      .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
-      .store_slice(admin_adress)
-      .store_coins(amount)
-      .store_uint(0, MSG_ONLY_BODY_SIZE)
-  .end_cell();
-
-  send_message(message);
 }
 
 
@@ -77,10 +61,27 @@ const int error::premission_denied =           1003;
   if (operation_code == opeartion::withdraw_funds) {
     int withdraw_amount = in_msg_body~load_coins();
     throw_unless(errror::malo_tonov_on_balance, (my_balance - MIN_TONS_FOR_STORAGE) >= withdraw_amount);
-    give_all(admin_adress, withdraw_amount);
+    give_all(withdraw_amount);
     return ();
   }
 
 }
 
+()give_all(int withdraw_amount) impure inline {
+  (slice admin_adress) = load_storage();
+  builder message = begin_cell()
+      .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
+      .store_slice(admin_adress)
+      .store_coins(withdraw_amount)
+      .store_uint(0, MSG_ONLY_BODY_SIZE)
+  .end_cell();
+
+  send_message(message);
+}
+
+
+(cell) get_owner() method_id {
+  (slice admin_adress) = load_storage();
+  return admin_adress;
+}
 
