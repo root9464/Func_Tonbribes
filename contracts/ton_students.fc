@@ -23,16 +23,15 @@ const int error::premission_denied =           1003;
 () set_storage(slice admin_address) impure {
   set_data(
     begin_cell()
-        .store_slice(admin_adress)
+        .store_slice(admin_address)
     .end_cell()
   );
 }
 
-(slice, int) load_storage() impure {
+(slice) load_storage() impure {
   slice contract_storage = get_data().begin_parse();
   return (
-    contract_storage~load_msg_addr(),
-    contract_storage~load_uint(256)
+    contract_storage~load_msg_addr()
   );
 }
 
@@ -67,16 +66,15 @@ const int error::premission_denied =           1003;
 
 }
 
-()give_all(int withdraw_amount) impure inline {
+() give_all(int withdraw_amount) impure inline {
   (slice admin_adress) = load_storage();
   builder message = begin_cell()
       .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
       .store_slice(admin_adress)
       .store_coins(withdraw_amount)
-      .store_uint(0, MSG_ONLY_BODY_SIZE)
-  .end_cell();
-
-  send_message(message);
+      .store_uint(0, MSG_ONLY_BODY_SIZE);
+  
+  send_raw_message(message.end_cell(), SEND_MODE_PAY_FEES_SEPARATELY);
 }
 
 
