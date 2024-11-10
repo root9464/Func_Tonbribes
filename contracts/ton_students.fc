@@ -1,0 +1,86 @@
+#include "imports/stdlib.fc";
+
+
+const int opeartion::withdraw_funds =         0x456ab;
+const int MIN_TONS_FOR_STORAGE =               50000000;
+const int TONS_FOR_FOR_COMISSION =             200000000;
+
+const int MSG_TYPE_SIZE =                      6;
+const int BOUNCEABLE =                         0x18; ;; 0b011000 tag - 0, ihr_disabled - 1, bounce - 1, bounced - 0, src = adr_none$00
+const int NON_BOUNCEABLE =                     0x10; ;; 0b010000 tag - 0, ihr_disabled - 1, bounce - 0, bounced - 0, src = adr_none$00
+const int MSG_INFO_REST_BITS =                 1 + 4 + 4 + 64 + 32;
+const int MSG_ONLY_BODY_SIZE =                 MSG_INFO_REST_BITS + 1 + 1;
+const int SEND_MODE_PAY_FEES_SEPARATELY =      1;
+
+
+const int error::malo_tonov_na_comission =     1000;
+const int errror::malo_tonov_on_balance =      1001;
+const int error::premission_denied =           1003;
+
+
+
+;; память ск / больше памяти = больше комиссии 
+() set_storage(slice admin_address, int secret_key) impure {
+  set_data(
+    begin_cell()
+        .store_slice(admin_adress)
+    .end_cell()
+  );
+}
+
+(slice, int) load_storage() impure {
+  slice contract_storage = get_data().begin_parse();
+  return (
+    contract_storage~load_msg_addr(),
+    contract_storage~load_uint(256)
+  );
+}
+
+
+()give_all(int amount) impure inline {
+  (slice admin_adress) = load_storage();
+  
+  var balance = get_balance();
+
+  builder message = begin_cell()
+      .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
+      .store_slice(admin_adress)
+      .store_coins(amount)
+      .store_uint(0, MSG_ONLY_BODY_SIZE)
+  .end_cell();
+
+  send_message(message);
+}
+
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+  if (in_msg_body.slice_empty?()) {
+    return ();
+  }
+
+  slice sliced_message = in_msg_full.begin_parse();
+
+  int flags = sliced_message~load_uint(4);
+
+  if (flags & 1) {
+    return ();
+  }
+
+  slice sender_address = sliced_message~load_msg_addr();
+
+  int operation_code = in_msg_body~load_uint(32);
+  int query_id = in_msg_body~load_uint(64);
+
+  (slice admin_adress) = load_storage();
+
+
+  if (operation_code == opeartion::withdraw_funds) {
+    int withdraw_amount = in_msg_body~load_coins();
+    throw_unless(errror::malo_tonov_on_balance, (my_balance - MIN_TONS_FOR_STORAGE) >= withdraw_amount);
+    give_all(admin_adress, withdraw_amount);
+    return ();
+  }
+
+}
+
+
