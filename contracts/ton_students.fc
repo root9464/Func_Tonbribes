@@ -37,10 +37,10 @@ const int error::premission_denied =           1003;
 
 
 () give_all(int withdraw_amount) impure inline {
-  (slice admin_adress) = load_storage();
+  (slice admin_address) = load_storage();
   builder message = begin_cell()
       .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
-      .store_slice(admin_adress)
+      .store_slice(admin_address)
       .store_coins(withdraw_amount)
       .store_uint(0, MSG_ONLY_BODY_SIZE);
   
@@ -65,7 +65,7 @@ const int error::premission_denied =           1003;
   int operation_code = in_msg_body~load_uint(32);
   int query_id = in_msg_body~load_uint(64);
 
-  (slice admin_adress) = load_storage();
+  (slice admin_address) = load_storage();
 
 
   if (operation_code == opeartion::withdraw_funds) {
@@ -78,7 +78,7 @@ const int error::premission_denied =           1003;
 }
 
 (slice) get_owner() method_id {
-  (slice admin_adress) = load_storage();
-  return admin_adress;
+  (slice admin_address) = load_storage();
+  return admin_address;
 }
 
