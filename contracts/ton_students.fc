@@ -1,7 +1,10 @@
 #include "imports/stdlib.fc";
 
 
-const int opeartion::withdraw_funds =         0x456ab;
+const int opeartion::withdraw_funds =          0x456ab;
+const int opeartion::making_purchase =         0x789def;
+
+
 const int MIN_TONS_FOR_STORAGE =               50000000;
 const int TONS_FOR_FOR_COMISSION =             200000000;
 
@@ -16,7 +19,7 @@ const int SEND_MODE_PAY_FEES_SEPARATELY =      1;
 const int error::malo_tonov_na_comission =     1000;
 const int errror::malo_tonov_on_balance =      1001;
 const int error::premission_denied =           1003;
-
+const int errror::ne_admin_idet_naxui =        1004;
 
 
 ;; память ск / больше памяти = больше комиссии 
@@ -36,15 +39,40 @@ const int error::premission_denied =           1003;
 }
 
 
-() give_all(int withdraw_amount) impure inline {
+() give_all() impure inline {
   (slice admin_address) = load_storage();
+  raw_reserve(10000000,0); ;; 0.01 ton
+
   builder message = begin_cell()
       .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
       .store_slice(admin_address)
-      .store_coins(withdraw_amount)
+      .store_coins(0)
       .store_uint(0, MSG_ONLY_BODY_SIZE);
   
-  send_raw_message(message.end_cell(), SEND_MODE_PAY_FEES_SEPARATELY);
+  send_raw_message(message.end_cell(), 128); ;;1 для multi send
+}
+
+() main_purchase(slice to_adress, int amount) impure inline {
+  (slice admin_address) = load_storage();
+
+  int amount_with_comission = amount - TONS_FOR_FOR_COMISSION - 10000000; ;; коммисия сервису
+  int ostatok = amount - amount_with_comission; ;; то что уходит креатору
+
+  builder message = begin_cell()
+      .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
+      .store_slice(admin_address)
+      .store_coins(ostatok)
+      .store_uint(0, MSG_ONLY_BODY_SIZE);
+  
+  send_raw_message(message.end_cell(), 1); ;;1 для multi send
+
+  builder message2 = begin_cell()
+      .store_uint(BOUNCEABLE, MSG_TYPE_SIZE)
+      .store_slice(to_adress)
+      .store_coins(amount_with_comission)
+      .store_uint(0, MSG_ONLY_BODY_SIZE);
+  
+  send_raw_message(message2.end_cell(), 1); ;;1 для multi send
 }
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
@@ -60,20 +88,30 @@ const int error::premission_denied =           1003;
     return ();
   }
 
-  slice sender_address = sliced_message~load_msg_addr();
+  slice sender_address = sliced_message~load_msg_addr(); ;;отправитель
+  ;; та самая коробочка in_msg_body
 
   int operation_code = in_msg_body~load_uint(32);
   int query_id = in_msg_body~load_uint(64);
 
+  
+  slice creator_address = in_msg_body~load_msg_addr(); ;; креатор
+  int amount_transaction = in_msg_body~load_coins(); ;;120bits вес 
+  
   (slice admin_address) = load_storage();
 
 
   if (operation_code == opeartion::withdraw_funds) {
-    int withdraw_amount = in_msg_body~load_coins();
-    throw_unless(errror::malo_tonov_on_balance, (my_balance - MIN_TONS_FOR_STORAGE) >= withdraw_amount);
-    give_all(withdraw_amount);
+    throw_unless(errror::ne_admin_idet_naxui, equal_slices(admin_address, sender_address));
+    give_all();
     return ();
   }
+
+  if (operation_code == opeartion::making_purchase){
+    main_purchase(creator_address,amount_transaction);
+    return ();
+  }
+
 
 }
 
