@@ -6,7 +6,7 @@ const int opeartion::making_purchase =         0xabc123;
 
 
 const int MIN_TONS_FOR_STORAGE =               50000000;
-const int TONS_FOR_FOR_COMISSION =             200000000;
+const int TONS_FOR_FOR_COMISSION =             20000000;
 
 const int MSG_TYPE_SIZE =                      6;
 const int BOUNCEABLE =                         0x18; ;; 0b011000 tag - 0, ihr_disabled - 1, bounce - 1, bounced - 0, src = adr_none$00
@@ -55,7 +55,7 @@ const int errror::ne_admin_idet_naxui =        1004;
 () main_purchase(slice to_adress, int amount) impure inline {
   (slice admin_address) = load_storage();
 
-  int amount_with_comission = amount - TONS_FOR_FOR_COMISSION - 10000000; ;; коммисия сервису
+  int amount_with_comission = amount - TONS_FOR_FOR_COMISSION; ;; коммисия сервису
   int ostatok = amount - amount_with_comission; ;; то что уходит креатору
 
   builder message = begin_cell()
