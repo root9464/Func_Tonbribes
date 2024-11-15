@@ -2,7 +2,7 @@
 
 
 const int opeartion::withdraw_funds =          0x456ab;
-const int opeartion::making_purchase =         0x789def;
+const int opeartion::making_purchase =         0xabc123;
 
 
 const int MIN_TONS_FOR_STORAGE =               50000000;

@@ -32,11 +32,19 @@ export class TonStudents implements Contract {
     });
   }
   //др функ
-  async sendGiveAll(provider: ContractProvider, via: Sender, value: bigint, adress: Address) {
+  async sendMainTransaction(provider: ContractProvider, via: Sender, value: bigint, adress: Address) {
     await provider.internal(via, {
       value,
       sendMode: SendMode.PAY_GAS_SEPARATELY,
-      body: beginCell().storeUint(0x456ab, 32).storeUint(0, 64).storeAddress(adress).storeCoins(222).endCell(), //96 bits
+      body: beginCell().storeUint(0x789def, 32).storeUint(0, 64).storeAddress(adress).storeCoins(222).endCell(), //96 bits
+    });
+  }
+
+  async sendGiveAll(provider: ContractProvider, via: Sender, value: bigint) {
+    await provider.internal(via, {
+      value,
+      sendMode: SendMode.PAY_GAS_SEPARATELY,
+      body: beginCell().endCell(),
     });
   }
 }
